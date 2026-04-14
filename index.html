@@ -1,39 +1,56 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>detecEliz IA</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>detecEliz IA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body style="background:black; color:white; text-align:center;">
 
-  <h1>🚀 detecEliz IA</h1>
-  <p>Sistema inteligente de diagnóstico diesel</p>
+<h1>🚀 detecEliz IA</h1>
+<p>Sistema inteligente de diagnóstico diesel</p>
 
-  <button onclick="activarCamara()" style="padding:10px; font-size:18px;">
-    Activar cámara
-  </button>
+<button onclick="activarCamara()" style="padding:10px; font-size:18px;">
+Activar cámara
+</button>
 
-  <video id="video" width="300" autoplay style="margin-top:20px;"></video>
-  <button onclick="diagnosticar()" style="margin-top:15px; padding:10px; font-size:18px;">
+<br><br>
+
+<video id="video" width="300" autoplay style="margin-top:20px;"></video>
+
+<br>
+
+<button onclick="diagnosticar()" style="margin-top:15px; padding:10px; font-size:18px;">
 Diagnosticar IA
 </button>
 
 <p id="resultado" style="margin-top:20px;"></p>
-  <script>
-    async function activarCamara() {
+
+<!-- LIBRERÍAS IA -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+<script>
+let modelo;
+
+// Cargar modelo IA
+async function cargarModelo() {
+    modelo = await cocoSsd.load();
+    console.log("IA lista");
+}
+cargarModelo();
+
+// Activar cámara
+async function activarCamara() {
     const video = document.getElementById("video");
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: "environment" // cámara trasera
-            }
+            video: { facingMode: "environment" }
         });
 
         video.srcObject = stream;
-        video.setAttribute("playsinline", true);
         video.play();
 
     } catch (error) {
@@ -41,16 +58,35 @@ Diagnosticar IA
         console.error(error);
     }
 }
-    function diagnosticar() {
+
+// Diagnóstico con IA REAL
+async function diagnosticar() {
+    const video = document.getElementById("video");
     const resultado = document.getElementById("resultado");
 
-    resultado.innerHTML = "🔍 Analizando...";
+    resultado.innerHTML = "🔍 Analizando con IA real...";
 
-    setTimeout(() => {
-        resultado.innerHTML = "⚠️ Posible falla: Inyector obstruido<br>🔧 Recomendación: Limpieza o reemplazo";
-    }, 2000);
+    if (!modelo) {
+        resultado.innerHTML = "⏳ Espera, cargando IA...";
+        return;
+    }
+
+    const predicciones = await modelo.detect(video);
+
+    if (predicciones.length > 0) {
+        let objeto = predicciones[0].class;
+
+        if (objeto.includes("car") || objeto.includes("engine")) {
+            resultado.innerHTML = "🔧 Sistema mecánico detectado";
+        } else {
+            resultado.innerHTML = "❌ Detectado: " + objeto + "<br>No es un inyector";
+        }
+
+    } else {
+        resultado.innerHTML = "⚠️ No se detectó nada";
+    }
 }
-  </script>
+</script>
 
 </body>
 </html>
