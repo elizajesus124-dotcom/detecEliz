@@ -2,89 +2,98 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>detecEliz IA</title>
+<title>DetecEliz PRO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+    text-align: center;
+}
+
+button {
+    padding: 10px;
+    margin: 10px;
+    font-size: 16px;
+}
+
+#reader {
+    width: 300px;
+    margin: auto;
+}
+</style>
 </head>
 
-<body style="background:black; color:white; text-align:center;">
+<body>
 
-<h1>🚀 detecEliz IA</h1>
-<p>Sistema inteligente de diagnóstico diesel</p>
+<h1>🔧 DetecEliz PRO</h1>
+<h3>Scanner + Diagnóstico Inteligente</h3>
 
-<button onclick="activarCamara()" style="padding:10px; font-size:18px;">
-Activar cámara
-</button>
+<button onclick="iniciarCamara()">📷 Escanear</button>
+<button onclick="detenerCamara()">⛔ Detener</button>
 
-<br><br>
+<div id="reader"></div>
 
-<video id="video" width="300" autoplay style="margin-top:20px;"></video>
-
-<br>
-
-<button onclick="diagnosticar()" style="margin-top:15px; padding:10px; font-size:18px;">
-Diagnosticar IA
-</button>
-
-<p id="resultado" style="margin-top:20px;"></p>
-
-<!-- LIBRERÍAS IA -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+<h2 id="resultado"></h2>
 
 <script>
-let modelo;
+let html5QrCode;
 
-// Cargar modelo IA
-async function cargarModelo() {
-    modelo = await cocoSsd.load();
-    console.log("IA lista");
-}
-cargarModelo();
+function iniciarCamara() {
+    if (html5QrCode && html5QrCode._isScanning) return;
 
-// Activar cámara
-async function activarCamara() {
-    const video = document.getElementById("video");
+    html5QrCode = new Html5Qrcode("reader");
 
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" }
-        });
+    html5QrCode.start(
+        { facingMode: "environment" },
+        {
+            fps: 10,
+            qrbox: 250
+        },
+        (decodedText) => {
+            document.getElementById("resultado").innerText =
+                "Código detectado: " + decodedText;
 
-        video.srcObject = stream;
-        video.play();
-
-    } catch (error) {
-        alert("Error al acceder a la cámara");
-        console.error(error);
-    }
-}
-
-// Diagnóstico con IA REAL
-async function diagnosticar() {
-    const video = document.getElementById("video");
-    const resultado = document.getElementById("resultado");
-
-    resultado.innerHTML = "🔍 Analizando con IA real...";
-
-    if (!modelo) {
-        resultado.innerHTML = "⏳ Espera, cargando IA...";
-        return;
-    }
-
-    const predicciones = await modelo.detect(video);
-
-    if (predicciones.length > 0) {
-        let objeto = predicciones[0].class;
-
-        if (objeto.includes("car") || objeto.includes("engine")) {
-            resultado.innerHTML = "🔧 Sistema mecánico detectado";
-        } else {
-            resultado.innerHTML = "❌ Detectado: " + objeto + "<br>No es un inyector";
+            diagnosticar();
         }
+    );
+}
 
-    } else {
-        resultado.innerHTML = "⚠️ No se detectó nada";
+function detenerCamara() {
+    if (html5QrCode) {
+        html5QrCode.stop();
     }
+}
+
+function diagnosticar() {
+    let presion = prompt("Ingrese presión (bar):");
+    let estado = prompt("Estado: pulveriza / gotea / chorrea");
+
+    presion = parseInt(presion);
+
+    let resultado = "";
+
+    if (presion < 180) {
+        resultado = "❌ Presión baja - desgaste interno";
+    } else if (presion > 250) {
+        resultado = "⚠️ Presión alta - posible obstrucción";
+    } else {
+        if (estado === "pulveriza") {
+            resultado = "✅ Inyector OK";
+        } else if (estado === "gotea") {
+            resultado = "⚠️ Fuga interna";
+        } else if (estado === "chorrea") {
+            resultado = "❌ Daño severo";
+        } else {
+            resultado = "❓ Revisar datos";
+        }
+    }
+
+    document.getElementById("resultado").innerText = resultado;
 }
 </script>
 
