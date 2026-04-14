@@ -16,17 +16,40 @@
   </button>
 
   <video id="video" width="300" autoplay style="margin-top:20px;"></video>
+  <button onclick="diagnosticar()" style="margin-top:15px; padding:10px; font-size:18px;">
+Diagnosticar IA
+</button>
 
+<p id="resultado" style="margin-top:20px;"></p>
   <script>
-    function activarCamara() {
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          document.getElementById('video').srcObject = stream;
-        })
-        .catch(err => {
-          alert("Error al acceder a la cámara");
+    async function activarCamara() {
+    const video = document.getElementById("video");
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "environment" // cámara trasera
+            }
         });
+
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        video.play();
+
+    } catch (error) {
+        alert("Error al acceder a la cámara");
+        console.error(error);
     }
+}
+    function diagnosticar() {
+    const resultado = document.getElementById("resultado");
+
+    resultado.innerHTML = "🔍 Analizando...";
+
+    setTimeout(() => {
+        resultado.innerHTML = "⚠️ Posible falla: Inyector obstruido<br>🔧 Recomendación: Limpieza o reemplazo";
+    }, 2000);
+}
   </script>
 
 </body>
