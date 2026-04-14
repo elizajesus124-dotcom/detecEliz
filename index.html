@@ -1,2 +1,33 @@
- !
- 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>detecEliz IA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="background:black; color:white; text-align:center;">
+
+  <h1>🚀 detecEliz IA</h1>
+  <p>Sistema inteligente de diagnóstico diesel</p>
+
+  <button onclick="activarCamara()" style="padding:10px; font-size:18px;">
+    Activar cámara
+  </button>
+
+  <video id="video" width="300" autoplay style="margin-top:20px;"></video>
+
+  <script>
+    function activarCamara() {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          document.getElementById('video').srcObject = stream;
+        })
+        .catch(err => {
+          alert("Error al acceder a la cámara");
+        });
+    }
+  </script>
+
+</body>
+</html>
