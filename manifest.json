@@ -1,0 +1,15 @@
+{
+  "name": "DetecEliz PRO",
+  "short_name": "DetecEliz",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#111",
+  "theme_color": "#111",
+  "icons": [
+    {
+      "src": "icono.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
