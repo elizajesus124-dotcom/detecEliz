@@ -233,6 +233,10 @@ function generarPDF() {
     doc.text(texto, 10, 10);
     doc.save("reporte.pdf");
 }
+  <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
 </script>
 
 </body>
