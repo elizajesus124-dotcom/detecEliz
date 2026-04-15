@@ -6,24 +6,98 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- 🔥 FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+// CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyCwW9GT2F9vKb2-H0dR21OeaGzRXBCgTpM",
+  authDomain: "deteceliz-pro.firebaseapp.com",
+  projectId: "deteceliz-pro",
+  storageBucket: "deteceliz-pro.firebasestorage.app",
+  messagingSenderId: "653953090221",
+  appId: "1:653953090221:web:a6ad7e436c3ff2f5213c24"
+};
+
+// INICIALIZAR
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// LOGIN
+window.login = async function() {
+    let email = document.getElementById("email").value;
+    let pass = document.getElementById("password").value;
+
+    try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        alert("✅ Bienvenido técnico");
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("app").style.display = "block";
+    } catch (e) {
+        alert("❌ Error: " + e.message);
+    }
+};
+
+// GUARDAR NUBE
+window.guardarEnNube = async function(data) {
+  await addDoc(collection(db, "diagnosticos"), {
+    ...data,
+    fecha: new Date().toLocaleString()
+  });
+  alert("✅ Guardado en la nube");
+};
+
+// VER NUBE
+window.verHistorialNube = async function() {
+  const querySnapshot = await getDocs(collection(db, "diagnosticos"));
+  let lista = "";
+
+  querySnapshot.forEach((doc) => {
+    let d = doc.data();
+    lista += `📅 ${d.fecha}
+Cliente: ${d.cliente}
+Vehículo: ${d.vehiculo}
+Presión: ${d.presion}
+Estado: ${d.estado}
+Diagnóstico: ${d.resultado}
+Nivel: ${d.nivel}
+
+`;
+  });
+
+  alert(lista || "No hay datos aún");
+};
+</script>
 
 <style>
 body {
-    font-family: Arial;
-    background: #111;
-    color: white;
-    text-align: center;
+  font-family: Arial;
+  background: #111;
+  color: white;
+  text-align: center;
 }
 
 button {
-    padding: 10px;
-    margin: 10px;
-    font-size: 16px;
+  padding: 10px;
+  margin: 10px;
 }
 
 #reader {
-    width: 300px;
-    margin: auto;
+  width: 300px;
+  margin: auto;
+}
+
+.card {
+  background: #222;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 10px;
 }
 </style>
 </head>
@@ -31,18 +105,33 @@ button {
 <body>
 
 <h1>🔧 DetecEliz PRO</h1>
-<h3>Scanner + Diagnóstico Inteligente</h3>
+
+<div id="loginBox">
+<input id="email" placeholder="Email"><br>
+<input id="password" type="password" placeholder="Password"><br>
+<button onclick="login()">Ingresar</button>
+</div>
+
+<div id="app" style="display:none">
 
 <button onclick="iniciarCamara()">📷 Escanear</button>
 <button onclick="detenerCamara()">⛔ Detener</button>
+<button onclick="verHistorial()">📊 Local</button>
+<button onclick="verHistorialNube()">☁️ Nube</button>
 
 <div id="reader"></div>
+<div id="historialUI"></div>
+
+<button onclick="generarPDF()">📄 PDF</button>
 
 <h2 id="resultado"></h2>
+
+</div>
 
 <script>
 let html5QrCode;
 
+// CÁMARA
 function iniciarCamara() {
     if (html5QrCode && html5QrCode._isScanning) return;
 
@@ -50,50 +139,99 @@ function iniciarCamara() {
 
     html5QrCode.start(
         { facingMode: "environment" },
-        {
-            fps: 10,
-            qrbox: 250
-        },
+        { fps: 10, qrbox: 250 },
         (decodedText) => {
-            document.getElementById("resultado").innerText =
-                "Código detectado: " + decodedText;
-
-            diagnosticar();
+            diagnosticar(decodedText);
         }
     );
 }
 
 function detenerCamara() {
-    if (html5QrCode) {
-        html5QrCode.stop();
-    }
+    if (html5QrCode) html5QrCode.stop();
 }
 
-function diagnosticar() {
-    let presion = prompt("Ingrese presión (bar):");
-    let estado = prompt("Estado: pulveriza / gotea / chorrea");
+// DIAGNÓSTICO
+function diagnosticar(codigo) {
 
-    presion = parseInt(presion);
+    let cliente = prompt("Cliente:");
+    let vehiculo = prompt("Vehículo:");
+    let presion = parseInt(prompt("Presión:"));
+    let estado = prompt("pulveriza / gotea / chorrea");
 
-    let resultado = "";
+    let resultado = "", nivel = "", recomendacion = "";
 
     if (presion < 180) {
-        resultado = "❌ Presión baja - desgaste interno";
-    } else if (presion > 250) {
-        resultado = "⚠️ Presión alta - posible obstrucción";
-    } else {
+        resultado = "Desgaste interno";
+        nivel = "🔴 Malo";
+        recomendacion = "Reemplazar tobera";
+    } 
+    else if (presion > 250) {
+        resultado = "Obstrucción";
+        nivel = "🟡 Regular";
+        recomendacion = "Limpieza ultrasónica";
+    } 
+    else {
         if (estado === "pulveriza") {
-            resultado = "✅ Inyector OK";
+            resultado = "Correcto";
+            nivel = "🟢 Bueno";
+            recomendacion = "OK";
         } else if (estado === "gotea") {
-            resultado = "⚠️ Fuga interna";
-        } else if (estado === "chorrea") {
-            resultado = "❌ Daño severo";
+            resultado = "Fuga";
+            nivel = "🟡 Regular";
+            recomendacion = "Revisar aguja";
         } else {
-            resultado = "❓ Revisar datos";
+            resultado = "Daño severo";
+            nivel = "🔴 Malo";
+            recomendacion = "Reemplazo";
         }
     }
 
-    document.getElementById("resultado").innerText = resultado;
+    let reporte = `
+Cliente: ${cliente}
+Vehículo: ${vehiculo}
+Código: ${codigo}
+Presión: ${presion}
+Estado: ${estado}
+
+Diagnóstico: ${resultado}
+Nivel: ${nivel}
+Recomendación: ${recomendacion}
+`;
+
+    document.getElementById("resultado").innerText = reporte;
+
+    guardarHistorial(reporte);
+
+    if (confirm("¿Guardar en nube?")) {
+        guardarEnNube({cliente, vehiculo, codigo, presion, estado, resultado, nivel, recomendacion});
+    }
+}
+
+// LOCAL
+function guardarHistorial(rep) {
+    let h = JSON.parse(localStorage.getItem("historial")) || [];
+    h.push(rep);
+    localStorage.setItem("historial", JSON.stringify(h));
+}
+
+function verHistorial() {
+    let h = JSON.parse(localStorage.getItem("historial")) || [];
+    let c = document.getElementById("historialUI");
+    c.innerHTML = "";
+
+    h.reverse().forEach(item => {
+        c.innerHTML += <div class="card"><pre>${item}</pre></div>;
+    });
+}
+
+// PDF
+function generarPDF() {
+    const { jsPDF } = window.jspdf;
+    let doc = new jsPDF();
+    let texto = document.getElementById("resultado").innerText;
+
+    doc.text(texto, 10, 10);
+    doc.save("reporte.pdf");
 }
 </script>
 
